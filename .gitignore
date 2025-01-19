@@ -1,0 +1,15 @@
+gh-data-env/
+env/
+.env
+
+venv/
+.venv/
+
+__pycache__/
+*.pyc
+*.pyo
+*.pyd
+*.pyc
+
+.vscode/
+.idea/
