@@ -1,22 +1,45 @@
-import requests
-import os
-import json
 from dotenv import load_dotenv
+import requests
+
+import json
+import logging
+import os
+
+# Configure logging
+logging.basicConfig(level=logging.INFO, format='%(levelname)s: %(message)s')
 
 # Load environment variables from .env file
 load_dotenv()
 
-# Check if environment variables are set
+def get_github_credentials():
+    """Fetch GitHub credentials from environment variables."""
+    username = os.getenv('GITHUB_USERNAME')
+    repository = os.getenv('GITHUB_REPOSITORY')
+    token = os.getenv('GITHUB_TOKEN')  # Optional, for higher rate limits
+
+    if not username or not repository:
+        missing_vars = []
+        if not username:
+            missing_vars.append('GITHUB_USERNAME')
+        if not repository:
+            missing_vars.append('GITHUB_REPOSITORY')
+        raise KeyError(f"Missing environment variables: {', '.join(missing_vars)}")
+
+    return {
+        "username": username,
+        "repository": repository,
+        "token": token
+    }
+
+# Fetch GitHub credentials
 try:
-    GITHUB_USERNAME = os.getenv('GITHUB_USERNAME')
-    GITHUB_REPOSITORY = os.getenv('GITHUB_REPOSITORY')
-    GITHUB_TOKEN = os.getenv('GITHUB_TOKEN')  # Optional, for higher rate limits
+    credentials = get_github_credentials()
 except KeyError as e:
-    print(f"Missing environment variable: {e}")
+    logging.error(e)
     exit(1)
 
 # GitHub API endpoint for listing issues
-url = f"https://api.github.com/repos/{GITHUB_USERNAME}/{GITHUB_REPOSITORY}/issues"
+url = f"https://api.github.com/repos/{credentials['username']}/{credentials['repository']}/issues"
 
 # Optional: If you want to include closed issues as well
 params = {
@@ -27,8 +50,8 @@ params = {
 
 # Headers for authentication (if token is provided)
 headers = {}
-if GITHUB_TOKEN:
-    headers['Authorization'] = f'token {GITHUB_TOKEN}'
+if credentials["token"]:
+    headers['Authorization'] = f'token {credentials["token"]}'
 
 # Function to fetch issues with pagination
 def fetch_issues():
@@ -43,7 +66,7 @@ def fetch_issues():
             else:
                 break
         else:
-            print(f"Error: {response.status_code} - {response.text}")
+            logging.error(f"Error: {response.status_code} - {response.text}")
             break
     
     return issues
